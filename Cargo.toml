@@ -1,0 +1,9 @@
+[package]
+name = "minsh"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+hostname = "0.4.1"
+once_cell = "1.21.3"
+rustyline = "17.0.2"
