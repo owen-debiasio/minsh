@@ -8,3 +8,9 @@
 
 - Refactored functions
 - Made code more readable
+
+### v0.1.2
+
+- Added a more simplified command not found message
+- Added minimal configuration support
+  - Located in `$HOME/.config/minsh/config.toml`
