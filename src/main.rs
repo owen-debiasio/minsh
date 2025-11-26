@@ -3,18 +3,20 @@ use std::{path::PathBuf, process::exit};
 
 pub mod _env;
 pub mod cmd;
+pub mod configs;
 pub mod fs;
 
 use _env::*;
 use fs::*;
 
-static VER: &str = "v0.1.1";
+static VER: &str = "v0.1.2";
 
 fn main() {
     let mut editor = DefaultEditor::new().unwrap();
     let history = PathBuf::from(&ENV.home).join(".minsh_history");
     let _ = editor.load_history(&history);
-    cd(&ENV.home);
+
+    cd(&configs::load("path", "open_to", &ENV.home));
 
     loop {
         let line = editor
