@@ -9,7 +9,7 @@ pub mod fs;
 use _env::*;
 use fs::*;
 
-static VER: &str = "v0.1.2";
+static VER: &str = "v0.1.3";
 
 fn main() {
     let mut editor = DefaultEditor::new().unwrap();
