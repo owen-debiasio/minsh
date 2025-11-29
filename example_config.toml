@@ -1,5 +1,2 @@
 [path]
 open_to = "$HOME/Downloads"
-
-[commands]
-shell = "sh"
