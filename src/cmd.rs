@@ -1,30 +1,75 @@
-use std::process::{Command, Stdio};
+use std::{
+    path::Path,
+    process::{Command, Stdio},
+};
 
-use crate::{configs, fs::cd};
+use crate::_env::set_path;
 
-pub fn run(c: &str) {
-    let mut p = c.split_whitespace();
-    if let Some("cd") = p.next() {
-        cd(p.next().unwrap_or("/"));
+pub fn run(command_line: &str) {
+    if command_line.is_empty() {
         return;
     }
 
-    let output = Command::new(configs::load("commands", "shell", "bash"))
-        .arg("-c")
-        .arg(c)
-        .stdin(Stdio::inherit())
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::piped())
-        .output();
+    set_path();
 
-    match output {
-        Ok(o) => {
-            if let Ok(err) = String::from_utf8(o.stderr) {
-                if err.contains("command not found") {
-                    println!("minsh: {c} command not found");
-                }
+    let mut parts = command_line.split('|').map(str::trim);
+
+    let (first_cmd, first_args) = split_command(parts.next().unwrap());
+
+    if let Some(second_part) = parts.next() {
+        let (second_cmd, second_args) = split_command(second_part);
+
+        if command_exists(&first_cmd) {
+            let mut first_child = Command::new(&first_cmd)
+                .args(&first_args)
+                .stdout(Stdio::piped())
+                .spawn()
+                .unwrap();
+
+            if command_exists(&second_cmd) {
+                Command::new(&second_cmd)
+                    .args(&second_args)
+                    .stdin(first_child.stdout.take().unwrap())
+                    .stdout(Stdio::inherit())
+                    .stderr(Stdio::inherit())
+                    .spawn()
+                    .unwrap()
+                    .wait()
+                    .unwrap();
+            } else {
+                eprintln!("minsh: {second_cmd} command not found");
             }
+
+            first_child.wait().unwrap();
+        } else {
+            eprintln!("minsh: {first_cmd} command not found");
         }
-        Err(e) => eprintln!("{e}"),
+    } else {
+        exec_if_exists(&first_cmd, &first_args);
+    }
+}
+
+fn split_command(part: &str) -> (String, Vec<String>) {
+    let mut iter = part.split_whitespace();
+    let cmd = iter.next().unwrap().to_string();
+    let args = iter.map(String::from).collect();
+    (cmd, args)
+}
+
+fn command_exists(cmd: &str) -> bool {
+    Path::new(cmd).exists() || which::which(cmd).is_ok()
+}
+
+fn exec_if_exists(cmd: &str, args: &[String]) {
+    if command_exists(cmd) {
+        Command::new(cmd)
+            .args(args)
+            .stdin(Stdio::inherit())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .status()
+            .expect("Failed to execute command.");
+    } else {
+        eprintln!("minsh: {cmd} command not found");
     }
 }
